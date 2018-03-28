@@ -275,15 +275,15 @@ def AdjustLight(curZone):
 		targetVal = targetZoneLowerBound * smartGridModifier
 #-----------------------------------------------------------------------------------------------
 	#print ("attempting to adjust value of bulb to a target value of " + str(targetVal))
-	print ("at first zone was at " + str(currentValueOfZone))
+	print ("The bulbs are currently at a lumen of: " + str(currentValueOfBulbs))
 
 	while(not withinRange(receivedData.LightSensorValue,targetZoneLowerBound,targetZoneUpperBound)):
-		print("entered Loop")
+		print("Not within range....")
 		if (receivedData.LightSensorValue < targetZoneLowerBound):
 			if(currentValueOfBulbs < 255):
 				currentValueOfBulbs = currentValueOfBulbs + 15
 			else:
-				print ("already at max unable to up the bulb anymore")
+				print ("already at max brightness, wont be able to make the room brighter, please buy more bulbs.")
 				break
 				
 		
@@ -291,7 +291,7 @@ def AdjustLight(curZone):
 			if(currentValueOfBulbs > 0):
 				currentValueOfBulbs = currentValueOfBulbs - 15
 			else:
-				print("Cant go much lower")
+				print("Cant go much lower, we wont be able to make the zone this setting")
 				break
 		
 
@@ -310,6 +310,7 @@ def AdjustLight(curZone):
 		
 		#lets give arduino a chance to collect data and transmit it. 
 		time.sleep(0.1)
+	print ("moving to next sensor")
 	
 #-------------------------------------------------------------------------------------------------------------------------
 
