@@ -61,7 +61,7 @@ def main():
 	#loop forever
 	while True:
 		for curZone in ZoneList:
-			
+			print("------------------------------------------------------------------")
 			print("Currently checking the zone with zone name: " + curZone.ZoneName)
 
 			overrideflag = 10000 #some arbitrary number
@@ -224,7 +224,6 @@ def checkUserBrightnessModifier(zoneID):
 		
 #light adjustment logic... 
 def AdjustLight(curZone):
-	print("---------------------------------------------------------------------------------------")
 
 	onPeakModifier = 0.75
 	offPeakModifier = 1
