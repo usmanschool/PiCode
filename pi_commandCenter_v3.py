@@ -280,7 +280,7 @@ def AdjustLight(curZone):
 	while(not withinRange(receivedData.LightSensorValue,targetZoneLowerBound,targetZoneUpperBound)):
 		print("entered Loop")
 		if (receivedData.LightSensorValue < targetZoneLowerBound):
-			if(currentValueOfBulbs < 240):
+			if(currentValueOfBulbs < 255):
 				currentValueOfBulbs = currentValueOfBulbs + 15
 			else:
 				print ("already at max unable to up the bulb anymore")
@@ -302,7 +302,7 @@ def AdjustLight(curZone):
 		if currentValueOfBulbs < 0:
 			currentValueOfBulbs = 0
 
-		setLightBrightness(curZone,currentValueOfZone)
+		setLightBrightness(curZone,currentValueOfBulbs)
 		time.sleep(0.1)
 		
 		#lets recheck the value of the sensor. 
