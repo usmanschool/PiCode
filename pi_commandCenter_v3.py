@@ -21,8 +21,8 @@ pipes = [[0xF1, 0xF2, 0xF3, 0XF4, 0xC1], [0xF1, 0xF2, 0xF3, 0xF4, 0xA1]]
 
 #List of zones and their objects....
 ZoneList = []
-targetZoneUpperBound = 20
-targetZoneLowerBound = 10
+targetZoneUpperBound = 110
+targetZoneLowerBound = 100
 
 #Postgres SQL Constants.
 host = "ec2-54-83-23-91.compute-1.amazonaws.com"
