@@ -232,6 +232,7 @@ def AdjustLight(curZone):
 	energySavingModeOn = checkEnergySavingMode (curZone.ZoneId)
 	currentValueOfZone = getBrightnessSetting (curZone.ZoneId) #lets get the current zone value 
 	
+	print (curZone.bulbList(0))
 	currentValueOfBulbs = bridge.get_light(int(curZone.bulbList(0)),'bri')
 	
 	#bridge.set_light(int(bulb),'on', False)
