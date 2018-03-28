@@ -224,7 +224,7 @@ def checkUserBrightnessModifier(zoneID):
 		
 #light adjustment logic... 
 def AdjustLight(curZone):
-	
+	print("---------------------------------------------------------------------------------------")
 
 	onPeakModifier = 0.75
 	offPeakModifier = 1
