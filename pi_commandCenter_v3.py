@@ -297,7 +297,7 @@ def AdjustLight(curZone):
 
 		#makes sure we stay within our limits 
 		if currentValueOfBulbs > 255:
-			currentValueOfBulbs == 255
+			currentValueOfBulbs = 255
 		
 		if currentValueOfBulbs < 0:
 			currentValueOfBulbs = 0
@@ -317,7 +317,7 @@ def AdjustLight(curZone):
 	 
 def setLightBrightness(curZone,value):
 	
-	print ("attempting to set value of bulb to value")
+	print ("attempting to set value of bulb to value" + str(value))
 	mybulbList = curZone.bulbList.split(",")
 	for bulb in mybulbList:
 		if (value < 1):
