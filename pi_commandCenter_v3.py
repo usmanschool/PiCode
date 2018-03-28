@@ -234,7 +234,7 @@ def AdjustLight(curZone):
 	
 	mybulbList = curZone.bulbList.split(",")
 
-	currentValueOfBulbs = bridge.get_light(int(mybulbList(0)),'bri')
+	currentValueOfBulbs = bridge.get_light(int(mybulbList[0]),'bri')
 	
 	#bridge.set_light(int(bulb),'on', False)
 
