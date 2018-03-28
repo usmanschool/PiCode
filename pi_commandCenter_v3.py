@@ -229,18 +229,8 @@ def AdjustLight(curZone):
 	offPeakModifier = 1
 	midPeakModifier = 0.85
 	energySavingModeOn = checkEnergySavingMode (curZone.ZoneId)
-	currentValueOfZone = getBrightnessSetting (curZone.ZoneId) #lets get the current zone value 
-	
 	mybulbList = curZone.bulbList.split(",")
-
 	currentValueOfBulbs = bridge.get_light(int(mybulbList[0]),'bri')
-	
-	#bridge.set_light(int(bulb),'on', False)
-
-	
-	
-	
-	
 
 	if (energySavingModeOn == 9000):
 		print ("an error occured getting the energy saving mode and the user control modifier from the server")
@@ -280,6 +270,7 @@ def AdjustLight(curZone):
 		print("Not within range....")
 		if (receivedData.LightSensorValue < targetZoneLowerBound):
 			if(currentValueOfBulbs < 255):
+				print ("increasing brightness")
 				currentValueOfBulbs = currentValueOfBulbs + 15
 			else:
 				print ("already at max brightness, wont be able to make the room brighter, please buy more bulbs.")
@@ -288,6 +279,7 @@ def AdjustLight(curZone):
 		
 		elif (receivedData.LightSensorValue > targetZoneUpperBound):
 			if(currentValueOfBulbs > 0):
+				print ("decreasing brightness")
 				currentValueOfBulbs = currentValueOfBulbs - 15
 			else:
 				print("Cant go much lower, we wont be able to make the zone this setting")
@@ -302,13 +294,13 @@ def AdjustLight(curZone):
 			currentValueOfBulbs = 0
 
 		setLightBrightness(curZone,currentValueOfBulbs)
-		time.sleep(0.1)
+		time.sleep(0.2)
 		
 		#lets recheck the value of the sensor. 
 		RequesetData(curZone)
 		
 		#lets give arduino a chance to collect data and transmit it. 
-		time.sleep(0.1)
+		time.sleep(0.2)
 	print ("moving to next sensor")
 	
 #-------------------------------------------------------------------------------------------------------------------------
@@ -316,7 +308,7 @@ def AdjustLight(curZone):
 	 
 def setLightBrightness(curZone,value):
 	
-	print ("attempting to set value of bulb to value" + str(value))
+	print ("attempting to set value of bulb to value: " + str(value))
 	mybulbList = curZone.bulbList.split(",")
 	for bulb in mybulbList:
 		if (value < 1):
