@@ -21,7 +21,6 @@ pipes = [[0xF1, 0xF2, 0xF3, 0XF4, 0xC1], [0xF1, 0xF2, 0xF3, 0xF4, 0xA1]]
 
 #List of zones and their objects....
 ZoneList = []
-targetZoneValue = 55
 targetZoneUpperBound = 20
 targetZoneLowerBound = 10
 
@@ -226,7 +225,6 @@ def checkUserBrightnessModifier(zoneID):
 #light adjustment logic... 
 def AdjustLight(curZone):
 	
-	global targetZoneValue
 
 	onPeakModifier = 0.75
 	offPeakModifier = 1
@@ -234,10 +232,16 @@ def AdjustLight(curZone):
 	energySavingModeOn = checkEnergySavingMode (curZone.ZoneId)
 	currentValueOfZone = getBrightnessSetting (curZone.ZoneId) #lets get the current zone value 
 	
+	currentValueOfBulbs = bridge.get_light(int(curZone.bulbList(0)),'bri')
 	
-	userControlModifier = checkUserBrightnessModifier (curZone.ZoneId)
+	#bridge.set_light(int(bulb),'on', False)
 
-	if (energySavingModeOn == 9000 or userControlModifier == 9000):
+	
+	
+	
+	
+
+	if (energySavingModeOn == 9000):
 		print ("an error occured getting the energy saving mode and the user control modifier from the server")
 		return 
 		
@@ -266,28 +270,36 @@ def AdjustLight(curZone):
 			print ("error getting date time for some reason fell into this condition, must be a logic error somewhere")
 		
 		#this comes out to some value....that we are trying to reach. 
-		targetVal = targetZoneValue * smartGridModifier
+		targetVal = targetZoneLowerBound * smartGridModifier
 #-----------------------------------------------------------------------------------------------
 	#print ("attempting to adjust value of bulb to a target value of " + str(targetVal))
 	print ("at first zone was at " + str(currentValueOfZone))
 
-	while(not withinRange(receivedData.LightSensorValue,targetZoneLowerBound,targetZoneUpperBound) and currentValueOfZone <240 and currentValueOfZone >= 0):
+	while(not withinRange(receivedData.LightSensorValue,targetZoneLowerBound,targetZoneUpperBound)):
 		print("entered Loop")
-		if (receivedData.LightSensorValue < targetVal):
-			currentValueOfZone = currentValueOfZone + 15
+		if (receivedData.LightSensorValue < targetZoneLowerBound):
+			if(currentValueOfBulbs < 240):
+				currentValueOfBulbs = currentValueOfBulbs + 15
+			else:
+				print ("already at max unable to up the bulb anymore")
+				break
+				
 		
-		elif (receivedData.LightSensorValue > targetVal):
-			currentValueOfZone = currentValueOfZone - 15
+		elif (receivedData.LightSensorValue > targetZoneUpperBound):
+			if(currentValueOfBulbs > 0):
+				currentValueOfBulbs = currentValueOfBulbs - 15
+			else:
+				print("Cant go much lower")
+				break
 		
 
 		#makes sure we stay within our limits 
-		if currentValueOfZone > 255:
-			currentValueOfZone == 255
+		if currentValueOfBulbs > 255:
+			currentValueOfBulbs == 255
 		
-		if currentValueOfZone < 0:
-			currentValueOfZone = 0
+		if currentValueOfBulbs < 0:
+			currentValueOfBulbs = 0
 
-		
 		setLightBrightness(curZone,currentValueOfZone)
 		time.sleep(0.1)
 		
@@ -297,9 +309,6 @@ def AdjustLight(curZone):
 		#lets give arduino a chance to collect data and transmit it. 
 		time.sleep(0.1)
 	
-	#finally set the values (if not in range or useroverride flag is on.
-	print("setting the server values to: " + str(currentValueOfZone))
-	updateBrirghtnessSetting(curZone.ZoneId,currentValueOfZone)
 #-------------------------------------------------------------------------------------------------------------------------
 
 	 
@@ -308,10 +317,10 @@ def setLightBrightness(curZone,value):
 	print ("attempting to set value of bulb to value")
 	mybulbList = curZone.bulbList.split(",")
 	for bulb in mybulbList:
-		if (value <= 1):
+		if (value < 1):
 			bridge.set_light(int(bulb),'on', False)
 		
-		elif (value > 1):
+		elif (value >= 1):
 			
 			#check if light is off. if it is tturn it on.
 		
@@ -319,7 +328,10 @@ def setLightBrightness(curZone,value):
 			
 			#set the brightness. 
 			bridge.set_light(int(bulb),'bri', int(value))	
-		time.sleep (0.2)	
+		time.sleep (0.2)
+	
+	updateBrirghtnessSetting(curZone.ZoneId,value)
+
 	
 	
 	
