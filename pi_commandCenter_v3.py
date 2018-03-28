@@ -21,7 +21,9 @@ pipes = [[0xF1, 0xF2, 0xF3, 0XF4, 0xC1], [0xF1, 0xF2, 0xF3, 0xF4, 0xA1]]
 
 #List of zones and their objects....
 ZoneList = []
-targetZoneValue = 160
+targetZoneValue = 55
+targetZoneUpperBound = 20
+targetZoneLowerBound = 10
 
 #Postgres SQL Constants.
 host = "ec2-54-83-23-91.compute-1.amazonaws.com"
@@ -29,7 +31,7 @@ database = "d6q2l2eqtqu66u"
 port = "5432"
 username = "wcakxmmlvfppvl"
 password = "509b5b0fac09ca205c14a6ff6e9db2d820b0d74d7142bc7aefd7144b73d710b6"
-userID = 1 #hardcoded for now. might wana read in from a settings file
+userID = 3 #hardcoded for now. might wana read in from a settings file
 connection = None
 cursor = None
 
@@ -233,7 +235,7 @@ def AdjustLight(curZone):
 	currentValueOfZone = getBrightnessSetting (curZone.ZoneId) #lets get the current zone value 
 	
 	
-	#userControlModifier = checkUserBrightnessModifier (curZone.ZoneId)
+	userControlModifier = checkUserBrightnessModifier (curZone.ZoneId)
 
 	if (energySavingModeOn == 9000 or userControlModifier == 9000):
 		print ("an error occured getting the energy saving mode and the user control modifier from the server")
@@ -266,34 +268,37 @@ def AdjustLight(curZone):
 		#this comes out to some value....that we are trying to reach. 
 		targetVal = targetZoneValue * smartGridModifier
 #-----------------------------------------------------------------------------------------------
-	print ("attempting to adjust value of bulb to a target value of " + str(targetVal))
+	#print ("attempting to adjust value of bulb to a target value of " + str(targetVal))
 	print ("at first zone was at " + str(currentValueOfZone))
 
-	while(receivedData.LightSensorValue != targetVal && currentValueOfZone <255 && currentValueOfZone > 1):
-
+	while(not withinRange(receivedData.LightSensorValue,targetZoneLowerBound,targetZoneUpperBound) and currentValueOfZone <240 and currentValueOfZone >= 0):
+		print("entered Loop")
 		if (receivedData.LightSensorValue < targetVal):
-			currentValueOfZone = currentValueOfZone += 15;
+			currentValueOfZone = currentValueOfZone + 15
 		
 		elif (receivedData.LightSensorValue > targetVal):
-			currentValueOfZone = currentValueOfZone -= 15;
+			currentValueOfZone = currentValueOfZone - 15
 		
 
 		#makes sure we stay within our limits 
 		if currentValueOfZone > 255:
 			currentValueOfZone == 255
+		
+		if currentValueOfZone < 0:
+			currentValueOfZone = 0
 
 		
 		setLightBrightness(curZone,currentValueOfZone)
-		time.sleep(0.3)
+		time.sleep(0.1)
 		
 		#lets recheck the value of the sensor. 
 		RequesetData(curZone)
 		
 		#lets give arduino a chance to collect data and transmit it. 
-		time.sleep(0.2)
+		time.sleep(0.1)
 	
-	#finally set the values 
-	print("setting the server values to" + 
+	#finally set the values (if not in range or useroverride flag is on.
+	print("setting the server values to: " + str(currentValueOfZone))
 	updateBrirghtnessSetting(curZone.ZoneId,currentValueOfZone)
 #-------------------------------------------------------------------------------------------------------------------------
 
@@ -364,17 +369,21 @@ def RequesetData(curZone):
 	receivedData.LightSensorValue = int.from_bytes(rawSensorData[4:7],byteorder='little', signed=False)
 	receivedData.BatteryValue = int.from_bytes(rawSensorData[8:11],byteorder='little', signed=False)	
 	
-	print ("the length of the data array is: " + str(len(rawSensorData)))
-	print ("the Sensor ID is: " + str(receivedData.SensorID))
+	#print ("the length of the data array is: " + str(len(rawSensorData)))
+	#print ("the Sensor ID is: " + str(receivedData.SensorID))
 	print ("the Light Sensor value is: " + str(receivedData.LightSensorValue))
-	print ("the Battery level is: " + str(receivedData.BatteryValue))
+	#print ("the Battery level is: " + str(receivedData.BatteryValue))
 	return True
 	
 	
 	
 
 	
-
+def withinRange(numberInput,lowerbound,upperbound):
+	if(numberInput >= lowerbound and numberInput <= upperbound):
+		return True
+	else:
+		return False
 	
 	
 #class definitions below:	
