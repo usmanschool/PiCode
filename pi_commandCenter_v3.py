@@ -21,8 +21,8 @@ pipes = [[0xF1, 0xF2, 0xF3, 0XF4, 0xC1], [0xF1, 0xF2, 0xF3, 0xF4, 0xA1]]
 
 #List of zones and their objects....
 ZoneList = []
-targetZoneUpperBound = 110
-targetZoneLowerBound = 100
+targetZoneUpperBound = 40
+targetZoneLowerBound = 30
 
 #Postgres SQL Constants.
 host = "ec2-54-83-23-91.compute-1.amazonaws.com"
@@ -42,7 +42,9 @@ cmdReset = 110
 
 
 #hue Constants
-HueIP = '192.168.0.100'
+#HueIP = '192.168.0.100'
+HueIP = '192.168.1.122'
+
 #HueSecurityKey = 'NIlVZOyFJ1kDfw+m1osb2h-xDOqg2yfCG6q5vDu3d'
 HueSecurityKey = 'NIlVZOyFJ1kDfwm1osb2h-xDOqg2yfCG6q5vDu3d'
 
@@ -271,7 +273,7 @@ def AdjustLight(curZone):
 		if (receivedData.LightSensorValue < targetZoneLowerBound):
 			if(currentValueOfBulbs < 255):
 				print ("increasing brightness")
-				currentValueOfBulbs = currentValueOfBulbs + 15
+				currentValueOfBulbs = currentValueOfBulbs + 5
 			else:
 				print ("already at max brightness, wont be able to make the room brighter, please buy more bulbs.")
 				break
@@ -280,7 +282,7 @@ def AdjustLight(curZone):
 		elif (receivedData.LightSensorValue > targetZoneUpperBound):
 			if(currentValueOfBulbs > 0):
 				print ("decreasing brightness")
-				currentValueOfBulbs = currentValueOfBulbs - 15
+				currentValueOfBulbs = currentValueOfBulbs - 5
 			else:
 				print("Cant go much lower, we wont be able to make the zone this setting")
 				break
