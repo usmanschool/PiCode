@@ -1,7 +1,7 @@
 #code works with only python 3 and above......
 #note we will be mapping python integers to Arduino Long variables 
 #furthermore dont forget to specify little endian
-
+#last updated on March 31 2018 4 am :)
 
 import RPi.GPIO as GPIO
 from lib_nrf24 import NRF24
@@ -21,8 +21,8 @@ pipes = [[0xF1, 0xF2, 0xF3, 0XF4, 0xC1], [0xF1, 0xF2, 0xF3, 0xF4, 0xA1]]
 
 #List of zones and their objects....
 ZoneList = []
-targetZoneUpperBound = 40
-targetZoneLowerBound = 30
+targetZoneUpperBound = 40 #default values incase something messes up
+targetZoneLowerBound = 30 #default values incase something messes up
 
 #Postgres SQL Constants.
 host = "ec2-54-83-23-91.compute-1.amazonaws.com"
@@ -30,7 +30,7 @@ database = "d6q2l2eqtqu66u"
 port = "5432"
 username = "wcakxmmlvfppvl"
 password = "509b5b0fac09ca205c14a6ff6e9db2d820b0d74d7142bc7aefd7144b73d710b6"
-userID = 3 #hardcoded for now. might wana read in from a settings file
+userID = 3 
 connection = None
 cursor = None
 
@@ -57,6 +57,8 @@ bridge = None
 
 def main():
 	
+	global targetZoneLowerBound, targetZoneUpperBound
+	
 	#initialize all of the devices and objects required 
 	setupAllDevices()
 	
@@ -65,10 +67,13 @@ def main():
 		for curZone in ZoneList:
 			print("------------------------------------------------------------------")
 			print("Currently checking the zone with zone name: " + curZone.ZoneName)
-
+			
+			#grab the settings for the specific zone from the database. 
 			overrideflag = 10000 #some arbitrary number
-			overrideflag = checkOverRideFlag(curZone.ZoneId) #check flag.
-		
+			overrideflag = checkOverRideFlag(curZone.ZoneId) 
+			targetZoneUpperBound = checkBrightnessUpperLimit(curZone.ZoneId)
+			targetZoneLowerBound = checkBrightnessLowerLimit(curZone.ZoneId)
+			
 			#if user is not trying to override the settings then lets try to set the settings. 
 			if (overrideflag == 0):
 				RequesetData(curZone)
@@ -80,6 +85,7 @@ def main():
 				ManuallyAdjustLight(curZone)
 			else:
 				print ("urrrgh we got some random value from over ride flag check for errors...")
+				ConnectToSQLDB() #hopefully we never have to execute this but if it loses connection lets try again. 
 			
 			#wait a second between each zone checks...
 			time.sleep(1)
@@ -210,19 +216,29 @@ def checkEnergySavingMode(zoneID):
 		print ("Error checking energysavingmode flag... maybe database connection is down, try resetting the pi")
 		return 9000
 
-		
-		
-def checkUserBrightnessModifier(zoneID):
+
+def checkBrightnessLowerLimit(zoneID):
 	try:
-		query = "select desiredbrightness from zonetable where zoneid = " + str(zoneID) + ";"
+		query = "select zonebrightnesslowerbound from zonetable where zoneid = " + str(zoneID) + ";"
 		cursor.execute(query)
 		result = cursor.fetchone()
 		return (result[0])
 	
 	except:
-		print ("Error checking brightness modifier flag... maybe database connection is down, try resetting the pi")
+		print ("Error checking brightness Lower limit... maybe database connection is down, try resetting the pi")
 		return 9000
+
 		
+def checkBrightnessUpperLimit(zoneID):
+	try:
+		query = "select zonebrightnessupperbound from zonetable where zoneid = " + str(zoneID) + ";"
+		cursor.execute(query)
+		result = cursor.fetchone()
+		return (result[0])
+	
+	except:
+		print ("Error checking brightness Upper limit... maybe database connection is down, try resetting the pi")
+		return 9000
 		
 #light adjustment logic... 
 def AdjustLight(curZone):
@@ -233,7 +249,9 @@ def AdjustLight(curZone):
 	energySavingModeOn = checkEnergySavingMode (curZone.ZoneId)
 	mybulbList = curZone.bulbList.split(",")
 	currentValueOfBulbs = bridge.get_light(int(mybulbList[0]),'bri')
-
+	lowerbound = targetZoneLowerBound
+	upperbound = targetZoneUpperBound
+	
 	if (energySavingModeOn == 9000):
 		print ("an error occured getting the energy saving mode and the user control modifier from the server")
 		return 
@@ -263,14 +281,15 @@ def AdjustLight(curZone):
 			print ("error getting date time for some reason fell into this condition, must be a logic error somewhere")
 		
 		#this comes out to some value....that we are trying to reach. 
-		targetVal = targetZoneLowerBound * smartGridModifier
-#-----------------------------------------------------------------------------------------------
-	#print ("attempting to adjust value of bulb to a target value of " + str(targetVal))
-	print ("The bulbs are currently at a lumen of: " + str(currentValueOfBulbs))
+		lowerbound = int(lowerbound * smartGridModifier)
+		upperbound = int(upperbound * smartGridModifier)
 
-	while(not withinRange(receivedData.LightSensorValue,targetZoneLowerBound,targetZoneUpperBound)):
+	print ("The bulbs are currently at a lumen of: " + str(currentValueOfBulbs))
+	print ("Lowerbound is: " + str(lowerbound) + " upperbound is: " + str(upperbound)
+	
+	while(not withinRange(receivedData.LightSensorValue,lowerbound,upperbound)):
 		print("Not within range....")
-		if (receivedData.LightSensorValue < targetZoneLowerBound):
+		if (receivedData.LightSensorValue < lowerbound):
 			if(currentValueOfBulbs < 255):
 				print ("increasing brightness")
 				currentValueOfBulbs = currentValueOfBulbs + 5
@@ -279,12 +298,12 @@ def AdjustLight(curZone):
 				break
 				
 		
-		elif (receivedData.LightSensorValue > targetZoneUpperBound):
+		elif (receivedData.LightSensorValue > upperbound):
 			if(currentValueOfBulbs > 0):
 				print ("decreasing brightness")
 				currentValueOfBulbs = currentValueOfBulbs - 5
 			else:
-				print("Cant go much lower, we wont be able to make the zone this setting")
+				print("Cant go much lower, we wont be able to reach the desired setting")
 				break
 		
 
@@ -305,7 +324,7 @@ def AdjustLight(curZone):
 		time.sleep(0.2)
 	print ("moving to next sensor")
 	
-#-------------------------------------------------------------------------------------------------------------------------
+
 
 	 
 def setLightBrightness(curZone,value):
@@ -317,9 +336,7 @@ def setLightBrightness(curZone,value):
 			bridge.set_light(int(bulb),'on', False)
 		
 		elif (value >= 1):
-			
 			#check if light is off. if it is tturn it on.
-		
 			bridge.set_light(int(bulb),'on', True)
 			
 			#set the brightness. 
