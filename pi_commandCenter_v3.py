@@ -42,8 +42,10 @@ cmdReset = 110
 
 
 #hue Constants
+HueIP = '192.168.0.101'
+
 #HueIP = '192.168.0.100'
-HueIP = '192.168.1.122'
+#HueIP = '192.168.1.122'
 
 #HueSecurityKey = 'NIlVZOyFJ1kDfw+m1osb2h-xDOqg2yfCG6q5vDu3d'
 HueSecurityKey = 'NIlVZOyFJ1kDfwm1osb2h-xDOqg2yfCG6q5vDu3d'
@@ -76,8 +78,8 @@ def main():
 			
 			#if user is not trying to override the settings then lets try to set the settings. 
 			if (overrideflag == 0):
-				RequesetData(curZone)
-				if(RequesetData):
+				resp = RequesetData(curZone)
+				if(resp):
 					AdjustLight(curZone)
 			elif (overrideflag == 1):
 				#change brightness setting. 
@@ -285,14 +287,15 @@ def AdjustLight(curZone):
 		upperbound = int(upperbound * smartGridModifier)
 
 	print ("The bulbs are currently at a lumen of: " + str(currentValueOfBulbs))
-	print ("Lowerbound is: " + str(lowerbound) + " upperbound is: " + str(upperbound)
+	print ("Lowerbound is: " + str(lowerbound) + " upperbound is: " + str(upperbound))
+	print ("the current received value from the sensor is :" + str(receivedData.LightSensorValue))
 	
 	while(not withinRange(receivedData.LightSensorValue,lowerbound,upperbound)):
 		print("Not within range....")
 		if (receivedData.LightSensorValue < lowerbound):
 			if(currentValueOfBulbs < 255):
 				print ("increasing brightness")
-				currentValueOfBulbs = currentValueOfBulbs + 5
+				currentValueOfBulbs = currentValueOfBulbs + 10
 			else:
 				print ("already at max brightness, wont be able to make the room brighter, please buy more bulbs.")
 				break
@@ -301,7 +304,7 @@ def AdjustLight(curZone):
 		elif (receivedData.LightSensorValue > upperbound):
 			if(currentValueOfBulbs > 0):
 				print ("decreasing brightness")
-				currentValueOfBulbs = currentValueOfBulbs - 5
+				currentValueOfBulbs = currentValueOfBulbs - 10
 			else:
 				print("Cant go much lower, we wont be able to reach the desired setting")
 				break
@@ -318,7 +321,10 @@ def AdjustLight(curZone):
 		time.sleep(0.2)
 		
 		#lets recheck the value of the sensor. 
-		RequesetData(curZone)
+		success = RequesetData(curZone)
+		while not success:
+			success = RequesetData(curZone)
+			time.sleep(0.5)
 		
 		#lets give arduino a chance to collect data and transmit it. 
 		time.sleep(0.2)
@@ -386,20 +392,25 @@ def RequesetData(curZone):
 	
 	rawSensorData = []
 	radio.read(rawSensorData, radio.getDynamicPayloadSize())
-	
+	receivedData.SensorID = 9000
+	receivedData.LightSensorValue = 9000 
+
 	
 	#map the raw data to the correct variables
-	#overwrite the received Data Object's parameters	
-	receivedData.SensorID = int.from_bytes(rawSensorData[0:3],byteorder='little', signed=False)
-	receivedData.LightSensorValue = int.from_bytes(rawSensorData[4:7],byteorder='little', signed=False)
-	receivedData.BatteryValue = int.from_bytes(rawSensorData[8:11],byteorder='little', signed=False)	
-	
-	#print ("the length of the data array is: " + str(len(rawSensorData)))
-	#print ("the Sensor ID is: " + str(receivedData.SensorID))
-	print ("the Light Sensor value is: " + str(receivedData.LightSensorValue))
-	#print ("the Battery level is: " + str(receivedData.BatteryValue))
-	return True
-	
+	#overwrite the received Data Object's parameters
+	checkval = 	int.from_bytes(rawSensorData[0:3],byteorder='little', signed=False)
+	if checkval == curZone.LightSensorID:
+		receivedData.SensorID = int.from_bytes(rawSensorData[0:3],byteorder='little', signed=False)
+		receivedData.LightSensorValue = int.from_bytes(rawSensorData[4:7],byteorder='little', signed=False)
+		receivedData.BatteryValue = int.from_bytes(rawSensorData[8:11],byteorder='little', signed=False)	
+		#print ("the length of the data array is: " + str(len(rawSensorData)))
+		print ("the Sensor ID is: " + str(receivedData.SensorID))
+		print ("the Light Sensor value is: " + str(receivedData.LightSensorValue))
+		#print ("the Battery level is: " + str(receivedData.BatteryValue))
+		return True
+
+	print("errored out read in wrong values")
+	return False
 	
 	
 
